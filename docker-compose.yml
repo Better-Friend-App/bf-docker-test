@@ -1,0 +1,43 @@
+version: "3.7"
+
+volumes: 
+  node_modules:
+
+services:
+
+  postgres:
+    build:
+      context: docker-postgres/
+      dockerfile: postgres.dockerfile
+    image: bf-db-test
+    container_name: bf-postgres.db
+    ports: 
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: db_name
+      POSTGRES_PASSWORD: db_passwd
+
+  appserver:
+    build:
+      context: .
+      dockerfile: appserver.dockerfile
+    image: bf-app-test
+    container_name: bf-node.app
+    # this command will requires that your app have the npm package 'pm2'
+    command: ["./wait-for-it.sh", "postgres:5432", "-t", "60", "--", "pm2-dev", "server.js", "--watch", "--ignore-watch=node_modules"]
+    # command: ["./wait-for-it.sh", "mysqldb:3306", "-t", "60", "--", "pm2-runtime", "server.js"] #production
+    volumes: 
+      - .:/app/ #copies app to /app folder in container
+      - node_modules:/app/node_modules #ignores node_modules folder
+    environment:
+      NODE_ENV: docker
+
+  nginx:
+    build:
+      context: docker-nginx/
+      dockerfile: nginx.dockerfile
+    image: br-nginx-test
+    container_name: bf-web.nginx
+    ports:
+      - "80:80"
+    command: ["nginx", "-g", "daemon off;"]

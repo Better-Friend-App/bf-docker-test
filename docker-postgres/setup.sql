@@ -1,0 +1,1 @@
+-- insert any SQL statements here that will run when initially creating the docker image
